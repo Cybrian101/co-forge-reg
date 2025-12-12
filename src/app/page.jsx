@@ -5,14 +5,15 @@
 import { useState } from 'react'; 
 // Correct import path assuming structure src/app/page.jsx -> src/lib/supabase.js
 import { supabase } from '../lib/supabase'; 
-import { Loader2, Zap, CheckCircle, XCircle } from 'lucide-react'; 
+import { Loader2, Zap, CheckCircle, XCircle } from 'lucide-react';
+import Image from 'next/image'; 
 
 // Paths and constants
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "YOUR_SUPABASE_PROJECT_URL"; 
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "YOUR_SUPABASE_ANON_KEY"; 
 
-const CYBRIAN_LOGO_IMG = "\cybrian.jpg"; // Path relative to the public folder
+const CYBRIAN_LOGO_IMG = "/cybrian.jpg"; // Path relative to the public folder
 const TABLE_NAME = "registrations"; // The name of the table in your Supabase DB
 
 const communities = [
@@ -163,14 +164,12 @@ export default function App() {
         {/* Header and Logo */}
         <header className="text-center mb-8">
             <div className="flex justify-center mb-4">
-                <img 
-  src="/cybrian.jpg"   // direct path from public/
-  alt="Cybrian Logo" 
-  className="h-24 w-auto object-contain animate-pulse-slow"
-  onError={(e) => { 
-    e.target.onerror = null; 
-    e.target.src = "https://placehold.co/96x96/2e2e4e/ffffff?text=CYBRIAN"; 
-  }}
+                <Image
+  src="/cybrian.jpg"
+  alt="Cybrian Logo"
+  width={150}       // adjust size
+  height={150}
+  className="animate-pulse-slow"
 />
 
             </div>
@@ -294,7 +293,7 @@ export default function App() {
           </button>
           
           <p className="mt-4 text-center text-sm text-gray-400">
-            Next Steps: You will receive your Team ID and idea submission instructions via email after successful registration.
+            Next Steps: Wait while we create your Team ID and idea submission dates via email in a few days.
           </p>
         </form>
       </div>

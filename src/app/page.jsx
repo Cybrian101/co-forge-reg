@@ -1,65 +1,39 @@
-import { useState, useEffect } from 'react'; 
-// Reverting to standard package imports, relying on the user's Next.js environment
-// to resolve this module path correctly during the build.
-import { createClient } from '@supabase/supabase-js'; 
+/* eslint-disable react/jsx-no-comment-textnodes */
+"use client";
+import { useState } from 'react'; 
+// Correct import path assuming structure src/app/page.jsx -> src/lib/supabase.js
+import { supabase } from '../lib/supabase'; 
 import { Loader2, Zap, CheckCircle, XCircle } from 'lucide-react'; 
 
-const TABLE_NAME = "registrations"; 
-const CYBRIAN_LOGO_IMG = "https://placehold.co/96x96/2e2e4e/ffffff?text=CYBRIAN"; // Using a public placeholder
+// Paths and constants
 
-// --- Supabase Client Initialization (Refactored for Client-Side Execution) ---
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "YOUR_SUPABASE_PROJECT_URL"; 
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "YOUR_SUPABASE_ANON_KEY"; 
 
-// Define the client variable outside the component scope but initialize it only
-// within a client-side execution block (like useEffect or a function called there).
-let supabaseClient = null;
+const CYBRIAN_LOGO_IMG = "/CYBRIAN.jpg"; // Path relative to the public folder
+const TABLE_NAME = "registrations"; // The name of the table in your Supabase DB
 
-// Function to safely initialize the client
-const initializeSupabaseClient = () => {
-    // Check if the client is already initialized
-    if (supabaseClient) return supabaseClient;
+const communities = [
+  'Cybrian', 'Rootsprout', 'Codesapiens', 'Ai geeks', 'Flutterflow', 'Others / Not Affiliated'
+];
 
-    // IMPORTANT: In a real Next.js environment, these variables are loaded 
-    // from the environment. Since we are in a sandbox, we check for window context
-    // or rely on the user to replace the placeholders.
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''; 
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''; 
+const sources = [
+  'Instagram', 'LinkedIn', 'WhatsApp/Telegram Group', 'College Representative', 
+  'Friend/Word of Mouth', 'Other Social Platform'
+];
 
-    // **For Sandbox/Non-Env Testing:** Uncomment and replace with actual keys if running here:
-    // const supabaseUrl = 'YOUR_ACTUAL_SUPABASE_URL'; 
-    // const supabaseAnonKey = 'YOUR_ACTUAL_SUPABASE_ANON_KEY';
-    
-    // Check for required configuration before creating the client
-    if (!supabaseUrl || !supabaseAnonKey) {
-        console.error("Supabase environment variables are missing. Client will be null.");
-        return null;
-    }
+// --- Utility Components and Styles ---
+const Field = ({ children, label, required }) => (
+    <div className="flex flex-col space-y-1">
+        <label className="text-sm font-medium text-indigo-200">
+            {label} {required && <span className="text-red-400">*</span>}
+        </label>
+        {children}
+    </div>
+);
+const InputStyle = 'w-full px-4 py-3 bg-gray-950/70 border border-indigo-900 text-white rounded-xl transition-all duration-300 focus:border-indigo-400 focus:ring-0 input-glow placeholder-gray-500';
 
-    try {
-        supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
-        console.log("Supabase client initialized.");
-        return supabaseClient;
-    } catch (e) {
-        console.error("Error creating Supabase client:", e);
-        return null;
-    }
-};
-
-// --- End Supabase Client Initialization ---
-
-const App = () => {
-  const [supabaseInstance, setSupabaseInstance] = useState(null);
-  const [isClientReady, setIsClientReady] = useState(false);
-  
-  // 1. Client-Side Initialization using useEffect
-  useEffect(() => {
-    // This runs only on the client side, avoiding the Next.js prerender error
-    const client = initializeSupabaseClient();
-    setSupabaseInstance(client);
-    setIsClientReady(true);
-  }, []);
-
-  const isSystemReady = isClientReady && supabaseInstance; 
-
+export default function App() {
   const [form, setForm] = useState({
     leader_name: '', leader_college: '', leader_phone: '', leader_email: '',
     co_leader_name: '', co_leader_college: '', co_leader_phone: '', co_leader_email: '',
@@ -70,16 +44,10 @@ const App = () => {
   const [messageType, setMessageType] = useState(''); // 'success' or 'error'
   const [loading, setLoading] = useState(false);
   
-  const communities = [
-    'Cybrian', 'Rootsprout', 'Codesapiens', 'Ai geeks', 'Flutterflow', 'Others / Not Affiliated'
-  ];
+  // Checks if the Supabase client was successfully initialized (if the object has the 'from' method)
+  const isSystemReady = supabase && supabase.from; 
 
-  const sources = [
-    'Instagram', 'LinkedIn', 'WhatsApp/Telegram Group', 'College Representative', 
-    'Friend/Word of Mouth', 'Other Social Platform'
-  ];
-
-  // Form State Handlers
+  // 2. Form State Handlers
   const handleChange = e => {
     const { name, value, type, checked } = e.target;
     setForm(prev => ({
@@ -113,22 +81,18 @@ const App = () => {
     return true;
   };
 
-  // Form Submission (SUPABASE DATA SAVING)
+  // 3. Form Submission (SUPABASE DATA SAVING)
   const handleSubmit = async e => {
     e.preventDefault();
     setMessage(null);
     setMessageType('');
     
-    // Check for client readiness and initialization
     if (!isSystemReady) {
-      const errorMsg = supabaseClient === null && !isClientReady
-        ? 'Client is still initializing...'
-        : 'Configuration Error: Supabase client is not initialized. Please check your NEXT_PUBLIC environment variables.';
-      setMessage(errorMsg);
-      setMessageType('error');
-      return;
+        // This handles cases where the keys are missing in .env.local
+        setMessage('Configuration Error: Supabase client is not initialized. Please check your .env.local file.');
+        setMessageType('error');
+        return;
     }
-    
     if (!validate()) {
       setMessage('Please fill all required fields and confirm eligibility.');
       setMessageType('error');
@@ -139,46 +103,45 @@ const App = () => {
 
     // Prepare data payload for Supabase insertion (matches SQL schema precisely)
     const dataToInsert = {
-      leader_name: form.leader_name,
-      leader_college: form.leader_college,
-      leader_phone: form.leader_phone,
-      leader_email: form.leader_email,
-      co_leader_name: form.co_leader_name,
-      co_leader_college: form.co_leader_college,
-      co_leader_phone: form.co_leader_phone,
-      co_leader_email: form.co_leader_email,
-      community: form.community,
-      community_other: form.community === 'Others / Not Affiliated' ? form.community_other : null,
-      source: form.source,
-      eligibility_confirmed: form.eligibility_confirmed,
+        leader_name: form.leader_name,
+        leader_college: form.leader_college,
+        leader_phone: form.leader_phone,
+        leader_email: form.leader_email,
+        co_leader_name: form.co_leader_name,
+        co_leader_college: form.co_leader_college,
+        co_leader_phone: form.co_leader_phone,
+        co_leader_email: form.co_leader_email,
+        community: form.community,
+        community_other: form.community === 'Others / Not Affiliated' ? form.community_other : null,
+        source: form.source,
+        eligibility_confirmed: form.eligibility_confirmed,
     };
 
     try {
-      // Use the initialized instance from state
-      const { error } = await supabaseInstance
-        .from(TABLE_NAME)
-        .insert([dataToInsert]);
+        const { error } = await supabase
+            .from(TABLE_NAME)
+            .insert([dataToInsert]);
+            
+        if (error) throw error;
         
-      if (error) throw error;
-      
-      console.log("Registration data saved successfully to Supabase:", dataToInsert);
-      
-      setMessage('Registration successful! Check your email for your Team ID and next steps.');
-      setMessageType('success');
-      
-      // Reset form after success
-      setForm({
-        leader_name: '', leader_college: '', leader_phone: '', leader_email: '',
-        co_leader_name: '', co_leader_college: '', co_leader_phone: '', co_leader_email: '',
-        community: '', community_other: '', source: '', eligibility_confirmed: false
-      });
-      setShowOtherCommunity(false);
+        console.log("Registration data saved successfully to Supabase:", dataToInsert);
+        
+        setMessage('Registration successful! Check your email for your Team ID and next steps.');
+        setMessageType('success');
+        
+        // Reset form after success
+        setForm({
+          leader_name: '', leader_college: '', leader_phone: '', leader_email: '',
+          co_leader_name: '', co_leader_college: '', co_leader_phone: '', co_leader_email: '',
+          community: '', community_other: '', source: '', eligibility_confirmed: false
+        });
+        setShowOtherCommunity(false);
 
     } catch (error) {
       console.error("Supabase Submission Error:", error);
       const errorMsg = error.message.includes('not configured')
-                      ? 'Configuration Error: Please update SUPABASE_URL and SUPABASE_ANON_KEY.'
-                      : `Registration failed: ${error.message || 'Check your Supabase configuration and RLS policies.'}`;
+                       ? 'Configuration Error: Please update SUPABASE_URL and SUPABASE_ANON_KEY.'
+                       : `Registration failed: ${error.message || 'Check your Supabase configuration and RLS policies.'}`;
       setMessage(errorMsg);
       setMessageType('error');
 
@@ -188,29 +151,16 @@ const App = () => {
   };
 
   const messageClasses = messageType === 'success' 
-    ? 'bg-green-900/50 text-green-300 border border-green-700 shake-success' 
-    : 'bg-red-900/50 text-red-300 border border-red-700 shake-error';
-
-  // --- Utility Components and Styles (Included inside App component for single file export) ---
-  const Field = ({ children, label, required }) => (
-    <div className="field-hover-effect flex flex-col space-y-1">
-      <label className="text-sm font-medium text-indigo-200 label-glow-hover">
-        {label} {required && <span className="text-red-400">*</span>}
-      </label>
-      {children}
-    </div>
-  );
-  const InputStyle = 'w-full px-4 py-3 bg-gray-950/70 border border-indigo-900 text-white rounded-xl transition-all duration-300 focus:border-indigo-400 focus:ring-0 input-glow placeholder-gray-500 appearance-none';
-  // --- End Utility Components and Styles ---
+    ? 'bg-green-900/50 text-green-300 border border-green-700' 
+    : 'bg-red-900/50 text-red-300 border border-red-700';
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gray-950 background-grid">
-      {/* Container with a fixed max-w for desktop, responsive width for mobile */}
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gray-950">
       <div className="w-full max-w-4xl p-8 bg-gray-900 rounded-3xl container-pulse glow-border transition duration-500 ease-in-out">
         
         {/* Header and Logo */}
         <header className="text-center mb-8">
-            <div className="flex justify-center mb-4 logo-tilt">
+            <div className="flex justify-center mb-4">
                 <img 
                     src={CYBRIAN_LOGO_IMG} 
                     alt="Cybrian Logo" 
@@ -218,10 +168,10 @@ const App = () => {
                     onError={(e) => { e.target.onerror = null; e.target.src="https://placehold.co/96x96/2e2e4e/ffffff?text=CYBRIAN"; }}
                 />
             </div>
-            <h1 className="text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-purple-400 header-shadow">
+            <h1 className="text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-purple-400">
                 CO-FORGE CHALLENGE 1.0
             </h1>
-            <p className="mt-2 text-xl text-indigo-200 font-medium header-subtitle-fade">Enter the Circle of Innovators</p>
+            <p className="mt-2 text-xl text-indigo-200 font-medium">Enter the Circle of Innovators</p>
         </header>
 
         {/* Status Message */}
@@ -232,18 +182,10 @@ const App = () => {
           </div>
         )}
 
-        {/* Loading/System Not Ready Indicator */}
-        {!isClientReady && (
-             <div className="mb-6 p-4 text-center rounded-xl font-semibold bg-gray-800/50 text-indigo-300 border border-indigo-700">
-                <Loader2 className="inline h-5 w-5 mr-2 animate-spin" /> 
-                Initializing Supabase Client...
-             </div>
-        )}
-
         <form onSubmit={handleSubmit} autoComplete="off" className="space-y-8">
           
           {/* 1. Leader Details */}
-          <div className="p-6 bg-gray-800/70 rounded-xl shadow-inner border border-indigo-900/50 section-slide-in">
+          <div className="p-6 bg-gray-800/70 rounded-xl shadow-inner border border-indigo-900/50">
             <h2 className="text-2xl font-bold mb-4 text-purple-400 border-b border-purple-500/50 pb-2">1. Leader (Cadet) Details</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <Field label="Full Name" required>
@@ -262,7 +204,7 @@ const App = () => {
           </div>
 
           {/* 2. Co-Leader Details */}
-          <div className="p-6 bg-gray-800/70 rounded-xl shadow-inner border border-indigo-900/50 section-slide-in-delay">
+          <div className="p-6 bg-gray-800/70 rounded-xl shadow-inner border border-indigo-900/50">
             <h2 className="text-2xl font-bold mb-4 text-purple-400 border-b border-purple-500/50 pb-2">2. Co-Leader Details (The Partner)</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <Field label="Full Name" required>
@@ -281,7 +223,7 @@ const App = () => {
           </div>
 
           {/* 3. Affiliation & Confirmation */}
-          <div className="p-6 bg-gray-800/70 rounded-xl shadow-inner border border-indigo-900/50 section-slide-in-delay-2">
+          <div className="p-6 bg-gray-800/70 rounded-xl shadow-inner border border-indigo-900/50 space-y-5">
             <h2 className="text-2xl font-bold mb-4 text-purple-400 border-b border-purple-500/50 pb-2">3. Affiliation & Challenge Rules</h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -314,7 +256,7 @@ const App = () => {
             )}
 
             {/* Eligibility Confirmation */}
-            <div className="flex items-start pt-4 fade-in-delay-3">
+            <div className="flex items-start pt-4">
                 <input 
                     name="eligibility_confirmed" 
                     id="eligibility_confirmed" 
@@ -332,11 +274,10 @@ const App = () => {
                 </label>
             </div>
           </div>
-          
-          {/* Submit Button */}
+          /* Submit Button */
           <button
             type="submit"
-            className="w-full flex items-center justify-center py-4 px-6 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-extrabold text-xl rounded-xl transition duration-300 shadow-2xl shadow-purple-800/50 hover:shadow-purple-700/70 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-wait submit-glow"
+            className="w-full flex items-center justify-center py-4 px-6 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-extrabold text-xl rounded-xl transition duration-300 shadow-2xl shadow-purple-800/50 hover:shadow-purple-700/70 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-wait"
             disabled={loading || !isSystemReady}
           >
             {loading ? (
@@ -352,7 +293,7 @@ const App = () => {
         </form>
       </div>
       
-      {/* Custom CSS for Animations and Glow */}
+       {/* Custom CSS for Animations and Glow */}
       <style jsx>{`
         /* --- General Aesthetics and Background --- */
         .background-grid {
@@ -379,10 +320,11 @@ const App = () => {
           animation: pulse-slow 4s infinite ease-in-out;
         }
         .logo-tilt {
+            transform: perspective(500px) rotateY(10deg);
             transition: transform 0.5s ease-out;
         }
         .logo-tilt:hover {
-            transform: scale(1.05);
+            transform: perspective(500px) rotateY(-10deg);
         }
         .header-shadow {
             text-shadow: 0 0 8px rgba(147, 51, 234, 0.6);
@@ -416,12 +358,18 @@ const App = () => {
         .section-slide-in-delay-2 {
             animation: slideIn 0.6s ease-out 0.6s backwards;
         }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+        .fade-in-delay-3 {
+            animation: fadeIn 0.8s ease-out 1s backwards;
         }
 
         /* --- Button Glow and Flash --- */
+        @keyframes flash {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .flash-animation {
+            animation: flash 1s infinite steps(1, end);
+        }
         .submit-glow:not(:disabled):hover {
             box-shadow: 0 0 30px rgba(147, 51, 234, 0.8), 0 4px 15px rgba(79, 70, 229, 0.6);
         }
@@ -442,9 +390,8 @@ const App = () => {
         .shake-success {
             animation: successPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
+      
       `}</style>
     </div>
   );
 }
-
-export default App;

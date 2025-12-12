@@ -1,3 +1,5 @@
+/* eslint-disable react/no-unescaped-entities */
+/* eslint-disable @next/next/no-img-element */
 /* eslint-disable react/jsx-no-comment-textnodes */
 "use client";
 import { useState } from 'react'; 
@@ -10,7 +12,7 @@ import { Loader2, Zap, CheckCircle, XCircle } from 'lucide-react';
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "YOUR_SUPABASE_PROJECT_URL"; 
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "YOUR_SUPABASE_ANON_KEY"; 
 
-const CYBRIAN_LOGO_IMG = "/cybrian.jpg"; // Path relative to the public folder
+const CYBRIAN_LOGO_IMG = "\cybrian.jpg"; // Path relative to the public folder
 const TABLE_NAME = "registrations"; // The name of the table in your Supabase DB
 
 const communities = [
@@ -162,14 +164,18 @@ export default function App() {
         <header className="text-center mb-8">
             <div className="flex justify-center mb-4">
                 <img 
-                    src={CYBRIAN_LOGO_IMG} 
-                    alt="Cybrian Logo" 
-                    className="h-24 w-auto object-contain animate-pulse-slow"
-                    onError={(e) => { e.target.onerror = null; e.target.src="https://placehold.co/96x96/2e2e4e/ffffff?text=CYBRIAN"; }}
-                />
+  src="/cybrian.jpg"   // direct path from public/
+  alt="Cybrian Logo" 
+  className="h-24 w-auto object-contain animate-pulse-slow"
+  onError={(e) => { 
+    e.target.onerror = null; 
+    e.target.src = "https://placehold.co/96x96/2e2e4e/ffffff?text=CYBRIAN"; 
+  }}
+/>
+
             </div>
             <h1 className="text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-purple-400">
-                CO-FORGE CHALLENGE 1.0
+                CYBRIAN's CO-FORGE CHALLENGE
             </h1>
             <p className="mt-2 text-xl text-indigo-200 font-medium">Enter the Circle of Innovators</p>
         </header>
@@ -274,7 +280,7 @@ export default function App() {
                 </label>
             </div>
           </div>
-          /* Submit Button */
+
           <button
             type="submit"
             className="w-full flex items-center justify-center py-4 px-6 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-extrabold text-xl rounded-xl transition duration-300 shadow-2xl shadow-purple-800/50 hover:shadow-purple-700/70 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-wait"

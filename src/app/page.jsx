@@ -10,7 +10,7 @@ import { Loader2, Zap, CheckCircle, XCircle } from 'lucide-react';
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "YOUR_SUPABASE_PROJECT_URL"; 
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "YOUR_SUPABASE_ANON_KEY"; 
 
-const CYBRIAN_LOGO_IMG = "/CYBRIAN.jpg"; // Path relative to the public folder
+const CYBRIAN_LOGO_IMG = "/cybrian.jpg"; // Path relative to the public folder
 const TABLE_NAME = "registrations"; // The name of the table in your Supabase DB
 
 const communities = [
